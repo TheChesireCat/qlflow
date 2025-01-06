@@ -131,7 +131,7 @@ export default function TableFlowVisualization() {
 
 
     return (
-        <div className="w-full h-[800] relative">
+        <div className="w-full h-[800px] relative">
             <ReactFlow
                 nodes={nodes}
                 edges={edges}
