@@ -15,7 +15,6 @@ import {
     NodeChange,
     EdgeChange,
     MarkerType,
-    FitView
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
@@ -147,8 +146,10 @@ export default function TableFlowVisualization() {
                 <Controls />
             </ReactFlow>
             <div className="absolute top-4 left-4 z-10 flex gap-4">
-                <Button onClick={addNode}>Add Node</Button>
-                <Button onClick={deleteNode}>Delete Node</Button>
+                <Button onClick={addNode}>
+                    <DatabaseZap></DatabaseZap>Add Node</Button>
+                <Button onClick={deleteNode}>
+                    <BadgeMinusIcon></BadgeMinusIcon>Delete Node</Button>
             </div>
         </div>
 
