@@ -8,6 +8,7 @@ import "prismjs/components/prism-sql";
 import "prismjs/themes/prism.css";
 import { Input } from "@/components/ui/input";
 import { NodeProps, Node } from "@xyflow/react";
+import "./touch.css";
 
 // export type TableNode = Node<{
 //     data: {
@@ -93,7 +94,7 @@ export function TableNode({ data, selected }: NodeProps<TableNode>) {
             <Handle
                 type="target"
                 position={Position.Left}
-                className="w-3 h-3 !left-0"
+             
             />
             <input
                 value={tableAlias}
@@ -206,7 +207,6 @@ export function TableNode({ data, selected }: NodeProps<TableNode>) {
             <Handle
                 type="source"
                 position={Position.Right}
-                className="w-3 h-3 !right-0"
             />
         </div>
     );

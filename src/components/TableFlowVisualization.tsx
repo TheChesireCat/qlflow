@@ -140,6 +140,7 @@ export default function TableFlowVisualization() {
                 onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 fitView
+                className="touch-flow"
             >
                 <Background />
                 <MiniMap />
