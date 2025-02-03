@@ -15,10 +15,8 @@ import {
     NodeChange,
     EdgeChange,
     MarkerType,
-    ReactFlowProvider,
 } from "@xyflow/react";
 import { ReactFlowInstance } from "@xyflow/react";
-import { useNodesState, useEdgesState, useReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import TableNode from "@/components/nodes/TableNode";
@@ -77,7 +75,6 @@ const initialEdges: Edge[] = [
 export default function TableFlowVisualization() {
     const [nodes, setNodes] = useState(initialNodes);
     const [edges, setEdges] = useState(initialEdges);
-    const { setViewport } = useReactFlow();
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
     const [project, setProject] = useState("myapp");
 
@@ -138,6 +135,16 @@ export default function TableFlowVisualization() {
     }, [nodes, setNodes, setEdges]);
 
     const saveFlow = () => {
+        if (!rfInstance) {
+            // toast
+            toast({
+                title: "Error Saving Flow",
+                description: "ReactFlow instance is not initialized.",
+                variant: "destructive",
+            });
+            console.error("ReactFlow instance is not initialized.");
+            return;
+        }
         const flowData = rfInstance.toObject();
 
         console.log("Saved Flow:", flowData);
@@ -152,7 +159,8 @@ export default function TableFlowVisualization() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = "flow-data.json";
+        //a.download = "flow-data.json";
+        a.download = `${project}-flow-data.json`;
         a.click();
         URL.revokeObjectURL(url);
     };
@@ -184,7 +192,7 @@ export default function TableFlowVisualization() {
             } catch (error) {
                 toast({
                     title: "Error Loading JSON",
-                    description: error.message || "Invalid file format.",
+                    description: (error instanceof Error ? error.message : "Invalid file format."),
                     variant: "destructive",
                 });
             }
@@ -198,48 +206,61 @@ export default function TableFlowVisualization() {
     return (
         //         <div className="flex flex-col w-full h-screen">
         //   <div className="flex-grow relative">
-            <div className="w-full h-screen relative m-4 p-24 ">
+        <div className="w-full h-screen relative m-4 p-24 ">
 
 
-                <ReactFlow
-                    nodes={nodes}
-                    edges={edges}
-                    nodeTypes={nodeTypes}
-                    onNodesChange={onNodesChange}
-                    onEdgesChange={onEdgesChange}
-                    onConnect={onConnect}
-                    onInit={(instance) => setRfInstance(instance)}
-                    fitView
-                    className="touch-flow"
-                >
-                    <Background />
-                    <MiniMap />
-                    <Controls />
-                </ReactFlow>
-                <div className="absolute top-4 left-4 z-10 flex gap-4">
-                    <Button onClick={addNode}>
-                        <DatabaseZap></DatabaseZap>Add Node</Button>
-                    <Button onClick={deleteNode}>
-                        <BadgeMinusIcon></BadgeMinusIcon>Delete Node</Button>
-                    <Button onClick={saveFlow}>
-                        <SaveIcon className="mr-2" /> Save Flow
-                    </Button>
-                    <Input
-                        type="file"
-                        accept="application/json"
-                        onChange={loadFlow}
-                        className="file:hidden"
-                        id="upload-file"
-                    />
-                    <Button asChild>
-                        <label htmlFor="upload-file">
-                            <UploadIcon className="mr-2" /> Load JSON
-                        </label>
-                    </Button>
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onInit={(instance) => setRfInstance(instance)}
+                fitView
+                className="touch-flow"
+            >
+                <Background />
+                <MiniMap />
+                <Controls />
+            </ReactFlow>
+            <div className="absolute top-4 left-4 z-10 flex items-center space-x-3 bg-white p-3 shadow-lg rounded-lg">
+                <Input
+                    type="text"
+                    id="project"
+                    value={project}
+                    onChange={(e) => setProject(e.target.value)}
+                    placeholder="Project Name"
+                    className="w-48"
+                />
 
-                </div>
-                <Toaster />
+                <Button onClick={addNode} variant="outline">
+                    <DatabaseZap className="mr-2" /> Add Node
+                </Button>
+
+                <Button onClick={deleteNode} variant="destructive">
+                    <BadgeMinusIcon className="mr-2" /> Delete Node
+                </Button>
+
+                <Button onClick={saveFlow} variant="default">
+                    <SaveIcon className="mr-2" /> Save
+                </Button>
+
+                <Input
+                    type="file"
+                    accept="application/json"
+                    onChange={loadFlow}
+                    className="hidden"
+                    id="upload-file"
+                />
+                <Button asChild variant="secondary">
+                    <label htmlFor="upload-file" className="cursor-pointer">
+                        <UploadIcon className="mr-2" /> Load JSON
+                    </label>
+                </Button>
             </div>
+            <Toaster />
+        </div>
 
 
     );
