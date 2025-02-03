@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, memo } from "react";
 import { Handle, Position } from "@xyflow/react";
 import Editor from "react-simple-code-editor";
 import { highlight, languages } from "prismjs";
@@ -33,22 +33,9 @@ export type TableNodeData = {
     query: string;
   };
 
-  export type TableNode = Node<TableNodeData, 'table'>;
+export type TableNode = Node<TableNodeData, 'table'>;
 
-// interface TableNodeProps {
-//     data: {
-//         id: string;
-//         tableAlias: string;
-//         dataset: string;
-//         schema: string;
-//         tableName: string;
-//         createStatement: string;
-//         query: string;
-//     };
-//     selected: boolean;
-// }
-
-export function TableNode({ data, selected }: NodeProps<TableNode>) {
+const TableNode = function TableNode({ data, selected }: NodeProps<TableNode>) {
     const [tableAlias, setTableAlias] = useState(data.tableAlias);
     const [dataset, setDataset] = useState(data.dataset);
     const [schema, setSchema] = useState(data.schema);
@@ -88,7 +75,7 @@ export function TableNode({ data, selected }: NodeProps<TableNode>) {
 
     return (
         <div
-            className={`p-4 rounded-lg border max-w-md bg-white ${selected ? "border-2 border-blue-500" : "border-gray-500"
+            className={`p-4 rounded-lg border max-h-md max-w-md bg-white ${selected ? "border-2 border-blue-500" : "border-gray-500"
                 }`}
         >
             <Handle
@@ -212,3 +199,5 @@ export function TableNode({ data, selected }: NodeProps<TableNode>) {
     );
 
 }
+
+export default memo(TableNode);

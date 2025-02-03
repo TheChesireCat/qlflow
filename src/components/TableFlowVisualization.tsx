@@ -15,11 +15,17 @@ import {
     NodeChange,
     EdgeChange,
     MarkerType,
+    ReactFlowProvider,
 } from "@xyflow/react";
+import { ReactFlowInstance } from "@xyflow/react";
+import { useNodesState, useEdgesState, useReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
-import { TableNode } from "@/components/nodes/TableNode";
-import { DatabaseZap, BadgeMinusIcon } from "lucide-react";
+import TableNode from "@/components/nodes/TableNode";
+import { DatabaseZap, BadgeMinusIcon, SaveIcon, UploadIcon } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Toaster } from "./ui/toaster";
+import { Input } from "./ui/input";
 
 const nodeTypes = {
     tableNode: TableNode,
@@ -71,6 +77,9 @@ const initialEdges: Edge[] = [
 export default function TableFlowVisualization() {
     const [nodes, setNodes] = useState(initialNodes);
     const [edges, setEdges] = useState(initialEdges);
+    const { setViewport } = useReactFlow();
+    const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
+    const [project, setProject] = useState("myapp");
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) =>
@@ -128,31 +137,110 @@ export default function TableFlowVisualization() {
         });
     }, [nodes, setNodes, setEdges]);
 
+    const saveFlow = () => {
+        const flowData = rfInstance.toObject();
+
+        console.log("Saved Flow:", flowData);
+
+        // Optional: Save to local storage (uncomment if needed)
+        // localStorage.setItem("savedFlow", JSON.stringify(flowData));
+
+        // Optional: Create a downloadable JSON file
+        const blob = new Blob([JSON.stringify(flowData, null, 2)], {
+            type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "flow-data.json";
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    const { toast } = useToast();
+
+    const loadFlow = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const jsonData = JSON.parse(e.target?.result as string);
+
+                if (!jsonData.nodes || !jsonData.edges) {
+                    throw new Error("Invalid JSON structure. Expected { nodes: [], edges: [] }.");
+                }
+
+                console.log("Loaded Flow:", jsonData);
+                setNodes(jsonData.nodes);
+                setEdges(jsonData.edges);
+
+
+                toast({
+                    title: "Flow Loaded Successfully",
+                    description: "The nodes and edges have been updated.",
+                });
+            } catch (error) {
+                toast({
+                    title: "Error Loading JSON",
+                    description: error.message || "Invalid file format.",
+                    variant: "destructive",
+                });
+            }
+        };
+
+        reader.readAsText(file);
+    };
+
 
 
     return (
-        <div className="w-full h-[800px] relative">
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                fitView
-                className="touch-flow"
-            >
-                <Background />
-                <MiniMap />
-                <Controls />
-            </ReactFlow>
-            <div className="absolute top-4 left-4 z-10 flex gap-4">
-                <Button onClick={addNode}>
-                    <DatabaseZap></DatabaseZap>Add Node</Button>
-                <Button onClick={deleteNode}>
-                    <BadgeMinusIcon></BadgeMinusIcon>Delete Node</Button>
+        //         <div className="flex flex-col w-full h-screen">
+        //   <div className="flex-grow relative">
+            <div className="w-full h-screen relative m-4 p-24 ">
+
+
+                <ReactFlow
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onInit={(instance) => setRfInstance(instance)}
+                    fitView
+                    className="touch-flow"
+                >
+                    <Background />
+                    <MiniMap />
+                    <Controls />
+                </ReactFlow>
+                <div className="absolute top-4 left-4 z-10 flex gap-4">
+                    <Button onClick={addNode}>
+                        <DatabaseZap></DatabaseZap>Add Node</Button>
+                    <Button onClick={deleteNode}>
+                        <BadgeMinusIcon></BadgeMinusIcon>Delete Node</Button>
+                    <Button onClick={saveFlow}>
+                        <SaveIcon className="mr-2" /> Save Flow
+                    </Button>
+                    <Input
+                        type="file"
+                        accept="application/json"
+                        onChange={loadFlow}
+                        className="file:hidden"
+                        id="upload-file"
+                    />
+                    <Button asChild>
+                        <label htmlFor="upload-file">
+                            <UploadIcon className="mr-2" /> Load JSON
+                        </label>
+                    </Button>
+
+                </div>
+                <Toaster />
             </div>
-        </div>
+
 
     );
 }
