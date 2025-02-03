@@ -76,7 +76,7 @@ export default function TableFlowVisualization() {
     const [nodes, setNodes] = useState(initialNodes);
     const [edges, setEdges] = useState(initialEdges);
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
-    const [project, setProject] = useState("myapp");
+    const [project, setProject] = useState("DEFAULT_PROJECT_FLOW");
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) =>
