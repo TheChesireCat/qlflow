@@ -1,22 +1,21 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
     ReactFlow,
     Background,
     Controls,
     MiniMap,
     addEdge,
-    applyEdgeChanges,
-    applyNodeChanges,
+    useNodesState,
+    useEdgesState,
     Node,
     Edge,
     Connection,
-    NodeChange,
-    EdgeChange,
     MarkerType,
+    ReactFlowProvider,
+    ReactFlowInstance,
 } from "@xyflow/react";
-import { ReactFlowInstance } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import TableNode from "@/components/nodes/TableNode";
@@ -24,17 +23,21 @@ import { DatabaseZap, BadgeMinusIcon, SaveIcon, UploadIcon } from "lucide-react"
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "./ui/toaster";
 import { Input } from "./ui/input";
+import { TableNodeData } from "@/components/nodes/TableNode";
 
+// Map node types to your custom component.
 const nodeTypes = {
     tableNode: TableNode,
 };
 
-const initialNodes: Node[] = [
+// Note that we now include an `id` field inside the data for each node.
+const initialNodes: Node<TableNodeData>[] = [
     {
         id: "1",
         type: "tableNode",
         position: { x: 0, y: 0 },
         data: {
+            id: "1",
             tableAlias: "Users",
             dataset: "myapp",
             schema: "public",
@@ -49,6 +52,7 @@ const initialNodes: Node[] = [
         type: "tableNode",
         position: { x: 1000, y: 0 },
         data: {
+            id: "2",
             tableAlias: "Orders",
             dataset: "myapp",
             schema: "public",
@@ -71,50 +75,77 @@ const initialEdges: Edge[] = [
     },
 ];
 
-
 export default function TableFlowVisualization() {
-    const [nodes, setNodes] = useState(initialNodes);
-    const [edges, setEdges] = useState(initialEdges);
-    const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node, Edge> | null>(null);
+    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
+    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<TableNodeData>, Edge> | null>(null);
     const [project, setProject] = useState("DEFAULT_PROJECT_FLOW");
+    const { toast } = useToast();
 
-    const onNodesChange = useCallback(
-        (changes: NodeChange[]) =>
-            setNodes((nds) => applyNodeChanges(changes, nds)),
+    // Callback to update a node's data in the parent state.
+    const updateNodeData = useCallback(
+        (nodeId: string, newData: Partial<TableNodeData>) => {
+            // console.log("updateNodeData", nodeId, newData);
+            setNodes((nds) =>
+                nds.map((node) =>
+                    node.id === nodeId
+                        ? {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                ...newData,
+                                // Ensure that onDataChange is maintained.
+                                onDataChange: updateNodeData,
+                                // Also ensure the data id matches the node id.
+                                id: nodeId,
+                            },
+                        }
+                        : node
+                )
+            );
+            //   console.log("nodes", nodes);
+        },
         [setNodes]
     );
-    const onEdgesChange = useCallback(
-        (changes: EdgeChange[]) =>
-            setEdges((eds) => applyEdgeChanges(changes, eds)),
-        [setEdges]
-    );
+
+    // On mount, inject the onDataChange callback into each node's data.
+    useEffect(() => {
+        setNodes((nds) =>
+            nds.map((node) => ({
+                ...node,
+                data: { ...node.data, onDataChange: updateNodeData, id: node.id },
+            }))
+        );
+    }, [updateNodeData, setNodes]);
+
     const onConnect = useCallback(
-        (connection: Edge | Connection) =>
-            setEdges((eds) => addEdge(connection, eds)),
+        (connection: Edge | Connection) => setEdges((eds) => addEdge(connection, eds)),
         [setEdges]
     );
 
     const addNode = useCallback(() => {
-        const newNode: Node = {
-            id: `${nodes.length + 1}`,
+        const newId = `${nodes.length + 1}`;
+        const newNode: Node<TableNodeData> = {
+            id: newId,
             type: "tableNode",
             position: { x: Math.random() * 800, y: Math.random() * 600 },
             data: {
+                id: newId, // Include the id in the data.
                 tableAlias: "New Table",
                 dataset: "myapp",
                 schema: "public",
                 tableName: "new_table",
                 createStatement: "CREATE TABLE NewTable (\n  id INT PRIMARY KEY\n);",
                 query: "SELECT * FROM NewTable;",
+                onDataChange: updateNodeData,
             },
         };
         setNodes((nds) => [...nds, newNode]);
-    }, [nodes]);
+    }, [nodes, updateNodeData, setNodes]);
 
     const deleteNode = useCallback(() => {
         setNodes((nds) => {
             const selectedNode = nds.find((node) => node.selected);
-
             if (!selectedNode) {
                 console.warn("No node is selected to delete.");
                 return nds;
@@ -123,10 +154,8 @@ export default function TableFlowVisualization() {
         });
 
         setEdges((eds) => {
-
             const selectedNode = nodes.find((node) => node.selected);
             if (!selectedNode) return eds;
-
             return eds.filter(
                 (edge) =>
                     edge.source !== selectedNode.id && edge.target !== selectedNode.id
@@ -136,7 +165,6 @@ export default function TableFlowVisualization() {
 
     const saveFlow = () => {
         if (!rfInstance) {
-            // toast
             toast({
                 title: "Error Saving Flow",
                 description: "ReactFlow instance is not initialized.",
@@ -146,45 +174,37 @@ export default function TableFlowVisualization() {
             return;
         }
         const flowData = rfInstance.toObject();
-
-        console.log("Saved Flow:", flowData);
-
-        // Optional: Save to local storage (uncomment if needed)
-        // localStorage.setItem("savedFlow", JSON.stringify(flowData));
-
-        // Optional: Create a downloadable JSON file
+        // console.log("Saved Flow:", flowData);
         const blob = new Blob([JSON.stringify(flowData, null, 2)], {
             type: "application/json",
         });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        //a.download = "flow-data.json";
         a.download = `${project}-flow-data.json`;
         a.click();
         URL.revokeObjectURL(url);
     };
 
-    const { toast } = useToast();
-
     const loadFlow = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const jsonData = JSON.parse(e.target?.result as string);
-
                 if (!jsonData.nodes || !jsonData.edges) {
                     throw new Error("Invalid JSON structure. Expected { nodes: [], edges: [] }.");
                 }
-
-                console.log("Loaded Flow:", jsonData);
-                setNodes(jsonData.nodes);
+                // console.log("Loaded Flow:", jsonData);
+                // Inject onDataChange and ensure data.id is set correctly.
+                const loadedNodes = jsonData.nodes.map((node: Node<TableNodeData>) => ({
+                    ...node,
+                    data: { ...node.data, onDataChange: updateNodeData, id: node.id },
+                }));
+                // console.log("Loaded Nodes:", loadedNodes);
+                setNodes(loadedNodes);
                 setEdges(jsonData.edges);
-
-
                 toast({
                     title: "Flow Loaded Successfully",
                     description: "The nodes and edges have been updated.",
@@ -192,76 +212,68 @@ export default function TableFlowVisualization() {
             } catch (error) {
                 toast({
                     title: "Error Loading JSON",
-                    description: (error instanceof Error ? error.message : "Invalid file format."),
+                    description: error instanceof Error ? error.message : "Invalid file format.",
                     variant: "destructive",
                 });
             }
         };
-
         reader.readAsText(file);
     };
 
-
-
     return (
-        //         <div className="flex flex-col w-full h-screen">
-        //   <div className="flex-grow relative">
-        <div className="w-full h-screen relative m-4 p-24 ">
-
-
-            <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onInit={(instance) => setRfInstance(instance)}
-                fitView
-                className="touch-flow"
-            >
-                <Background />
-                <MiniMap />
-                <Controls />
-            </ReactFlow>
-            <div className="absolute top-4 left-4 z-10 flex items-center space-x-3 bg-white p-3 shadow-lg rounded-lg">
-                <Input
-                    type="text"
-                    id="project"
-                    value={project}
-                    onChange={(e) => setProject(e.target.value)}
-                    placeholder="Project Name"
-                    className="w-48"
-                />
-
-                <Button onClick={addNode} variant="outline">
-                    <DatabaseZap className="mr-2" /> Add Node
-                </Button>
-
-                <Button onClick={deleteNode} variant="destructive">
-                    <BadgeMinusIcon className="mr-2" /> Delete Node
-                </Button>
-
-                <Button onClick={saveFlow} variant="default">
-                    <SaveIcon className="mr-2" /> Save
-                </Button>
-
-                <Input
-                    type="file"
-                    accept="application/json"
-                    onChange={loadFlow}
-                    className="hidden"
-                    id="upload-file"
-                />
-                <Button asChild variant="secondary">
-                    <label htmlFor="upload-file" className="cursor-pointer">
-                        <UploadIcon className="mr-2" /> Load JSON
-                    </label>
-                </Button>
+        <ReactFlowProvider>
+            <div className="w-full h-screen relative m-4 ">
+                <ReactFlow
+                    zoomOnScroll={false}
+                    panOnScroll={false}
+                    preventScrolling={false}
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={onEdgesChange}
+                    onConnect={onConnect}
+                    onInit={(instance) => setRfInstance(instance)}
+                    fitView
+                    className="touch-flow"
+                >
+                    <Background />
+                    <MiniMap />
+                    <Controls />
+                </ReactFlow>
+                <div className="absolute top-4 left-4 z-10 flex items-center space-x-3 bg-white p-3 shadow-lg rounded-lg">
+                    <Input
+                        type="text"
+                        id="project"
+                        value={project}
+                        onChange={(e) => setProject(e.target.value)}
+                        placeholder="Project Name"
+                        className="w-48"
+                    />
+                    <Button onClick={addNode} variant="outline">
+                        <DatabaseZap className="mr-2" /> Add Node
+                    </Button>
+                    <Button onClick={deleteNode} variant="destructive">
+                        <BadgeMinusIcon className="mr-2" /> Delete Node
+                    </Button>
+                    <Button onClick={saveFlow} variant="default">
+                        <SaveIcon className="mr-2" /> Save
+                    </Button>
+                    <Input
+                        type="file"
+                        accept="application/json"
+                        onChange={loadFlow}
+                        className="hidden"
+                        id="upload-file"
+                    />
+                    <Button asChild variant="secondary">
+                        <label htmlFor="upload-file" className="cursor-pointer">
+                            <UploadIcon className="mr-2" /> Load JSON
+                        </label>
+                    </Button>
+                </div>
+                <Toaster />
             </div>
-            <Toaster />
-        </div>
-
-
+        </ReactFlowProvider>
     );
 }
