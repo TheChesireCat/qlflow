@@ -15,15 +15,17 @@ import {
     MarkerType,
     ReactFlowProvider,
     ReactFlowInstance,
+    useReactFlow,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import TableNode from "@/components/nodes/TableNode";
-import { DatabaseZap, BadgeMinusIcon, SaveIcon, UploadIcon } from "lucide-react";
+import { DatabaseZap, BadgeMinusIcon, SaveIcon, UploadIcon, CopyIcon, ClipboardCopyIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "./ui/toaster";
 import { Input } from "./ui/input";
 import { TableNodeData } from "@/components/nodes/TableNode";
+import { json } from "stream/consumers";
 
 // Map node types to your custom component.
 const nodeTypes = {
@@ -79,6 +81,7 @@ export default function TableFlowVisualization() {
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [rfInstance, setRfInstance] = useState<ReactFlowInstance<Node<TableNodeData>, Edge> | null>(null);
+    const { setViewport } = useReactFlow();
     const [project, setProject] = useState("DEFAULT_PROJECT_FLOW");
     const { toast } = useToast();
 
@@ -143,6 +146,8 @@ export default function TableFlowVisualization() {
         setNodes((nds) => [...nds, newNode]);
     }, [nodes, updateNodeData, setNodes]);
 
+    
+
     const deleteNode = useCallback(() => {
         setNodes((nds) => {
             const selectedNode = nds.find((node) => node.selected);
@@ -162,6 +167,66 @@ export default function TableFlowVisualization() {
             );
         });
     }, [nodes, setNodes, setEdges]);
+
+    const [copiedNode, setCopiedNode] =
+    useState<Node<TableNodeData> | null>(null);
+
+    const copyNode = useCallback(() => {
+        const selectedNode = nodes.find((node) => node.selected);
+        if (!selectedNode) {
+          toast({
+            title: "No Node Selected",
+            description: "Please select a node to copy.",
+            variant: "destructive",
+          });
+          return;
+        }
+        // Deep copy the selected node
+        const nodeCopy = JSON.parse(JSON.stringify(selectedNode));
+        setCopiedNode(nodeCopy);
+        toast({
+          title: "Node Copied",
+          description: `Copied node ${selectedNode.id}.`,
+        });
+      }, [nodes, toast]);
+    
+      // Paste the copied node with a new unique id.
+      const pasteNode = useCallback(() => {
+        if (!copiedNode) {
+          toast({
+            title: "No Copied Node",
+            description: "Please copy a node before pasting.",
+            variant: "destructive",
+          });
+          return;
+        }
+        // Generate a new id that does not exist yet.
+        let newId = (nodes.length + 1).toString();
+        while (nodes.some((node) => node.id === newId)) {
+          newId = (parseInt(newId) + 1).toString();
+        }
+        // Create a new node from the copied one.
+        const newNode: Node<TableNodeData> = {
+          ...copiedNode,
+          id: newId,
+          // Offset the position so it does not overlap exactly.
+          position: {
+            x: copiedNode.position.x + 20,
+            y: copiedNode.position.y + 20,
+          },
+          data: {
+            ...copiedNode.data,
+            id: newId,
+            onDataChange: updateNodeData,
+          },
+        };
+        setNodes((nds) => [...nds, newNode]);
+        toast({
+          title: "Node Pasted",
+          description: `Pasted node as ${newId}.`,
+        });
+      }, [copiedNode, nodes, setNodes, updateNodeData, toast]);
+    
 
     const saveFlow = () => {
         if (!rfInstance) {
@@ -205,6 +270,8 @@ export default function TableFlowVisualization() {
                 // console.log("Loaded Nodes:", loadedNodes);
                 setNodes(loadedNodes);
                 setEdges(jsonData.edges);
+                console.log(jsonData.viewport);
+                setViewport(jsonData.viewport);
                 toast({
                     title: "Flow Loaded Successfully",
                     description: "The nodes and edges have been updated.",
@@ -236,6 +303,7 @@ export default function TableFlowVisualization() {
                     onInit={(instance) => setRfInstance(instance)}
                     fitView
                     className="touch-flow"
+                    minZoom={0.1}
                 >
                     <Background />
                     <MiniMap />
@@ -253,6 +321,12 @@ export default function TableFlowVisualization() {
                     <Button onClick={addNode} variant="outline">
                         <DatabaseZap className="mr-2" /> Add Node
                     </Button>
+                    <Button onClick={copyNode} variant="outline">
+            <CopyIcon className="mr-2" /> Copy Node
+          </Button>
+          <Button onClick={pasteNode} variant="outline">
+            <ClipboardCopyIcon className="mr-2" /> Paste Node
+          </Button>
                     <Button onClick={deleteNode} variant="destructive">
                         <BadgeMinusIcon className="mr-2" /> Delete Node
                     </Button>

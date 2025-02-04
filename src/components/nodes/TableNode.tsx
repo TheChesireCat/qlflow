@@ -289,14 +289,14 @@ const TableNodeComponent = function TableNode({
           <SheetContent side="right" className="sm:max-w-[500px]">
             <SheetHeader>
               <SheetTitle>Node Details</SheetTitle>
-              <SheetDescription>
-                Here is the full query and additional description.
+              <SheetDescription className="break-all">
+                Full Name : {data.dataset}.{data.schema}.{data.tableName}
               </SheetDescription>
             </SheetHeader>
             <div className="mt-4 space-y-4">
               <div>
                 <h4 className="text-sm font-semibold">Query</h4>
-                <pre className="p-2 border rounded bg-gray-100 text-xs overflow-auto h-full">
+                <pre className="p-2 border rounded bg-gray-100 text-xs overflow-auto h-screen">
                   {data.query}
                 </pre>
               </div>
@@ -406,18 +406,21 @@ const TableNodeComponent = function TableNode({
       <div>
         <h3 className="text-sm font-semibold mb-1 text-gray-700">Query:</h3>
         {/* Query container with fixed height and overflow scroll */}
-        <div
+        {/* <div
           className="relative border border-gray-200 rounded-md bg-gray-50"
-          style={{ height: "150px", overflowY: "scroll" }}
-          onWheel={(e) => e.stopPropagation()}
-        >
+          style={{ height: "150px", overflow: "scroll" }}
+          
+        > */}
           <Editor
             value={data.query}
+            onScroll={(e) => e.stopPropagation()}
+          onWheel={(e) => e.stopPropagation()}
             onValueChange={(value) => onChange("query", value)}
             highlight={(code) => highlight(code, languages.sql, "sql")}
             padding={10}
             style={{
-              height: "100%",
+              height: "150px",
+              overflow: "scroll",
               fontFamily: '"Fira Code", "Fira Mono", monospace',
               fontSize: "0.75rem",
               lineHeight: "1.5",
@@ -426,7 +429,7 @@ const TableNodeComponent = function TableNode({
               outline: "none",
             }}
           />
-        </div>
+        {/* </div> */}
       </div>
       <Handle type="source" position={Position.Right} />
     </div>
