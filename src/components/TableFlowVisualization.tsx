@@ -20,12 +20,17 @@ import {
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import TableNode from "@/components/nodes/TableNode";
-import { DatabaseZap, BadgeMinusIcon, SaveIcon, UploadIcon, CopyIcon, ClipboardCopyIcon } from "lucide-react";
+import { SaveIcon, UploadIcon, CopyIcon, ClipboardCopyIcon, SquarePlusIcon, SquareXIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "./ui/toaster";
 import { Input } from "./ui/input";
 import { TableNodeData } from "@/components/nodes/TableNode";
-import { json } from "stream/consumers";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 // Map node types to your custom component.
 const nodeTypes = {
@@ -146,7 +151,7 @@ export default function TableFlowVisualization() {
         setNodes((nds) => [...nds, newNode]);
     }, [nodes, updateNodeData, setNodes]);
 
-    
+
 
     const deleteNode = useCallback(() => {
         setNodes((nds) => {
@@ -169,64 +174,64 @@ export default function TableFlowVisualization() {
     }, [nodes, setNodes, setEdges]);
 
     const [copiedNode, setCopiedNode] =
-    useState<Node<TableNodeData> | null>(null);
+        useState<Node<TableNodeData> | null>(null);
 
     const copyNode = useCallback(() => {
         const selectedNode = nodes.find((node) => node.selected);
         if (!selectedNode) {
-          toast({
-            title: "No Node Selected",
-            description: "Please select a node to copy.",
-            variant: "destructive",
-          });
-          return;
+            toast({
+                title: "No Node Selected",
+                description: "Please select a node to copy.",
+                variant: "destructive",
+            });
+            return;
         }
         // Deep copy the selected node
         const nodeCopy = JSON.parse(JSON.stringify(selectedNode));
         setCopiedNode(nodeCopy);
         toast({
-          title: "Node Copied",
-          description: `Copied node ${selectedNode.id}.`,
+            title: "Node Copied",
+            description: `Copied node ${selectedNode.id}.`,
         });
-      }, [nodes, toast]);
-    
-      // Paste the copied node with a new unique id.
-      const pasteNode = useCallback(() => {
+    }, [nodes, toast]);
+
+    // Paste the copied node with a new unique id.
+    const pasteNode = useCallback(() => {
         if (!copiedNode) {
-          toast({
-            title: "No Copied Node",
-            description: "Please copy a node before pasting.",
-            variant: "destructive",
-          });
-          return;
+            toast({
+                title: "No Copied Node",
+                description: "Please copy a node before pasting.",
+                variant: "destructive",
+            });
+            return;
         }
         // Generate a new id that does not exist yet.
         let newId = (nodes.length + 1).toString();
         while (nodes.some((node) => node.id === newId)) {
-          newId = (parseInt(newId) + 1).toString();
+            newId = (parseInt(newId) + 1).toString();
         }
         // Create a new node from the copied one.
         const newNode: Node<TableNodeData> = {
-          ...copiedNode,
-          id: newId,
-          // Offset the position so it does not overlap exactly.
-          position: {
-            x: copiedNode.position.x + 20,
-            y: copiedNode.position.y + 20,
-          },
-          data: {
-            ...copiedNode.data,
+            ...copiedNode,
             id: newId,
-            onDataChange: updateNodeData,
-          },
+            // Offset the position so it does not overlap exactly.
+            position: {
+                x: copiedNode.position.x + 20,
+                y: copiedNode.position.y + 20,
+            },
+            data: {
+                ...copiedNode.data,
+                id: newId,
+                onDataChange: updateNodeData,
+            },
         };
         setNodes((nds) => [...nds, newNode]);
         toast({
-          title: "Node Pasted",
-          description: `Pasted node as ${newId}.`,
+            title: "Node Pasted",
+            description: `Pasted node as ${newId}.`,
         });
-      }, [copiedNode, nodes, setNodes, updateNodeData, toast]);
-    
+    }, [copiedNode, nodes, setNodes, updateNodeData, toast]);
+
 
     const saveFlow = () => {
         if (!rfInstance) {
@@ -309,42 +314,120 @@ export default function TableFlowVisualization() {
                     <MiniMap />
                     <Controls />
                 </ReactFlow>
-                <div className="absolute top-4 left-4 z-10 flex items-center space-x-3 bg-white p-3 shadow-lg rounded-lg">
-                    <Input
-                        type="text"
-                        id="project"
-                        value={project}
-                        onChange={(e) => setProject(e.target.value)}
-                        placeholder="Project Name"
-                        className="w-48"
-                    />
-                    <Button onClick={addNode} variant="outline">
-                        <DatabaseZap className="mr-2" /> Add Node
-                    </Button>
-                    <Button onClick={copyNode} variant="outline">
-            <CopyIcon className="mr-2" /> Copy Node
-          </Button>
-          <Button onClick={pasteNode} variant="outline">
-            <ClipboardCopyIcon className="mr-2" /> Paste Node
-          </Button>
-                    <Button onClick={deleteNode} variant="destructive">
-                        <BadgeMinusIcon className="mr-2" /> Delete Node
-                    </Button>
-                    <Button onClick={saveFlow} variant="default">
-                        <SaveIcon className="mr-2" /> Save
-                    </Button>
-                    <Input
-                        type="file"
-                        accept="application/json"
-                        onChange={loadFlow}
-                        className="hidden"
-                        id="upload-file"
-                    />
-                    <Button asChild variant="secondary">
-                        <label htmlFor="upload-file" className="cursor-pointer">
-                            <UploadIcon className="mr-2" /> Load JSON
-                        </label>
-                    </Button>
+
+                <div className="absolute top-4 left-4 z-10 flex flex-col md:flex-row items-center space-y-3 md:space-y-0 md:space-x-3 bg-white p-2 shadow-lg rounded-lg">
+                    <TooltipProvider>
+                        {/* Project Name Input */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Input
+                                    type="text"
+                                    id="project"
+                                    value={project}
+                                    onChange={(e) => setProject(e.target.value)}
+                                    placeholder="Project Name"
+                                    className="w-12 h-12 md:w-48"
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <div className="flex items-center">
+                                    <p>Project name</p>
+                                    <p className="font-mono ml-2">{project}</p>
+                                </div>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Add Node Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={addNode} variant="outline">
+                                    <SquarePlusIcon />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Add Node</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Copy Node Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={copyNode} variant="outline">
+                                    <CopyIcon />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Copy Node</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Paste Node Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={pasteNode} variant="outline">
+                                    <ClipboardCopyIcon />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Paste Node</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Delete Node Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={deleteNode} variant="destructive">
+                                    <SquareXIcon />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Delete Node</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Save Flow Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button onClick={saveFlow} variant="default">
+                                    <SaveIcon />
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Save Flow</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Hidden File Input for Upload */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Input
+                                    type="file"
+                                    accept="application/json"
+                                    onChange={loadFlow}
+                                    className="hidden"
+                                    id="upload-file"
+                                />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Upload File</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+                        {/* Upload File Button */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button asChild variant="secondary">
+                                    <label htmlFor="upload-file" className="cursor-pointer">
+                                        <UploadIcon className="mr-2" />
+                                    </label>
+                                </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Upload File</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+
                 </div>
                 <Toaster />
             </div>

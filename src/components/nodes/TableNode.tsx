@@ -296,9 +296,9 @@ const TableNodeComponent = function TableNode({
             <div className="mt-4 space-y-4">
               <div>
                 <h4 className="text-sm font-semibold">Query</h4>
-                <pre className="p-2 border rounded bg-gray-100 text-xs overflow-auto h-screen">
-                  {data.query}
-                </pre>
+                <pre className="p-2 border rounded bg-gray-100 text-xs overflow-auto max-h-screen">
+  {data.query}
+</pre>
               </div>
               {data.description && (
                 <div>
