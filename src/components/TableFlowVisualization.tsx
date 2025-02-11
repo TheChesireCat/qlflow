@@ -136,7 +136,13 @@ export default function TableFlowVisualization() {
     }, [updateNodeData, setNodes]);
 
     const onConnect = useCallback(
-        (connection: Edge | Connection) => setEdges((eds) => addEdge(connection, eds)),
+        (connection: Edge | Connection) => setEdges((eds) => addEdge(
+            {...connection,
+                markerEnd: {
+                    type: MarkerType.Arrow,
+                }
+
+        }, eds)),
         [setEdges]
     );
 
