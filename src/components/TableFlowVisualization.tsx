@@ -20,7 +20,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import TableNode from "@/components/nodes/TableNode";
-import { SaveIcon, UploadIcon, CopyIcon, ClipboardCopyIcon, SquarePlusIcon, SquareXIcon } from "lucide-react";
+import { SaveIcon, UploadIcon, CopyIcon, ClipboardCopyIcon, SquarePlusIcon, SquareXIcon, DownloadCloudIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "./ui/toaster";
 import { Input } from "./ui/input";
@@ -31,6 +31,15 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 
 // Map node types to your custom component.
 const nodeTypes = {
@@ -388,9 +397,15 @@ export default function TableFlowVisualization() {
                         {/* Save Flow Button */}
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={saveFlow} variant="default">
-                                    <SaveIcon />
-                                </Button>
+                                
+                                    
+                                    <Button onClick={saveFlow} variant="default">
+                                                <DownloadCloudIcon />
+                                             </Button>
+                                    
+                                    
+
+
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p>Save Flow</p>

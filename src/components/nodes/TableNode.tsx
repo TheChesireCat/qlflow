@@ -220,6 +220,7 @@ export type TableNodeData = {
   createStatement: string;
   query: string;
   description?: string;
+  notebook?: string;
   // Callback passed from the parent for bidirectional updates.
   onDataChange?: (nodeId: string, newData: Partial<TableNodeData>) => void;
 };
@@ -430,6 +431,17 @@ const TableNodeComponent = function TableNode({
             }}
           />
         {/* </div> */}
+      </div>
+      <div>
+        <h3 className="text-sm font-semibold mt-2 mb-1 text-gray-700">Notebook:</h3>
+        <div className="flex items-center space-x-2">
+          <Input
+            value={data.notebook || ""}
+            onChange={(e) => onChange("notebook", e.target.value)}
+            className="font-mono text-xs"
+            placeholder="Notebook Path"
+          />
+        </div>
       </div>
       <Handle type="source" position={Position.Right} />
     </div>
