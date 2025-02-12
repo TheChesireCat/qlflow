@@ -20,7 +20,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { Button } from "@/components/ui/button";
 import TableNode from "@/components/nodes/TableNode";
-import { SaveIcon, UploadIcon, CopyIcon, ClipboardCopyIcon, SquarePlusIcon, SquareXIcon, DownloadCloudIcon } from "lucide-react";
+import { SaveIcon, UploadIcon, CopyIcon, ClipboardCopyIcon, SquarePlusIcon, SquareXIcon, DownloadCloudIcon, PaletteIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Toaster } from "./ui/toaster";
 import { Input } from "./ui/input";
@@ -45,6 +45,49 @@ import {
 const nodeTypes = {
     tableNode: TableNode,
 };
+
+const colorOptions: string[] = [
+    "red",
+    "yellow",
+    "sky",
+    "blue",
+    "lime",
+    "pink",
+    "purple",
+    "rose",
+    "emerald",
+    "teal",
+    "cyan",
+    "slate"
+];
+
+const colorMap: Record<string, string> = {
+    red: "bg-red-500",
+    yellow: "bg-yellow-500",
+    sky: "bg-sky-500",
+    blue: "bg-blue-500",
+    lime: "bg-lime-500",
+    pink: "bg-pink-500",
+    purple: "bg-purple-500",
+    rose: "bg-rose-500",
+    emerald: "bg-emerald-500",
+    teal: "bg-teal-500",
+    cyan: "bg-cyan-500",
+    slate: "bg-slate-500"
+};
+
+// const colorMap: Record<string, string> = {
+//     red: "bg-red-500",
+//     blue: "bg-blue-500",
+//     green: "bg-green-500",
+//     yellow: "bg-yellow-500",
+//     purple: "bg-purple-500",
+//     pink: "bg-pink-500",
+//     teal: "bg-teal-500",
+
+// };
+
+
 
 // Note that we now include an `id` field inside the data for each node.
 const initialNodes: Node<TableNodeData>[] = [
@@ -137,12 +180,13 @@ export default function TableFlowVisualization() {
 
     const onConnect = useCallback(
         (connection: Edge | Connection) => setEdges((eds) => addEdge(
-            {...connection,
+            {
+                ...connection,
                 markerEnd: {
                     type: MarkerType.Arrow,
                 }
 
-        }, eds)),
+            }, eds)),
         [setEdges]
     );
 
@@ -209,6 +253,8 @@ export default function TableFlowVisualization() {
             description: `Copied node ${selectedNode.id}.`,
         });
     }, [nodes, toast]);
+
+   
 
     // Paste the copied node with a new unique id.
     const pasteNode = useCallback(() => {
@@ -400,18 +446,74 @@ export default function TableFlowVisualization() {
                             </TooltipContent>
                         </Tooltip>
 
+                        {/* Change Color Dropdown */}
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger>
+                                        <div className="
+                                        inline-flex items-center justify-center 
+                                        gap-2 whitespace-nowrap rounded-md text-sm 
+                                        font-medium transition-colors focus-visible:outline-none 
+                                        focus-visible:ring-1 focus-visible:ring-ring 
+                                        disabled:pointer-events-none disabled:opacity-50 
+                                        [&_svg]:pointer-events-none [&_svg]:size-4 
+                                        [&_svg]:shrink-0 border border-input bg-background 
+                                        shadow-sm hover:bg-accent hover:text-accent-foreground 
+                                        h-9 px-4 py-2">
+                                            <PaletteIcon />
+                                        </div>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent>
+                                        {/* <DropdownMenuLabel>Pick Color</DropdownMenuLabel> */}
+                                        <DropdownMenuSeparator />
+                                        <div className="grid grid-cols-3 gap-2 p-2">
+                                            {colorOptions.map((color) => (
+                                                <DropdownMenuItem
+                                                    key={color}
+                                                    className="p-0 focus:outline-none"
+                                                    onClick={() => {
+                                                        setNodes(nds =>
+                                                            nds.map(node =>
+                                                                node.selected // Check if the node is selected
+                                                                    ? {
+                                                                        ...node,
+                                                                        data: {
+                                                                            ...node.data,
+                                                                            color: color // Update color for all selected nodes
+                                                                        }
+                                                                    }
+                                                                    : node
+                                                            )
+                                                        );
+                                                    }}
+                                                >
+                                                    <div
+                                                        className={`
+                                                        w-6 h-6 rounded-full transition-all 
+                                                        ${colorMap[color] || "bg-gray-500"} 
+                                                        hover:ring-2 hover:ring-offset-2 hover:ring-gray-400 
+                                                        focus:ring-2 focus:ring-offset-2 focus:ring-gray-400
+                                                    `}
+                                                    ></div>
+                                                </DropdownMenuItem>
+                                            ))}
+                                        </div>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                                <p>Pick Color</p>
+                            </TooltipContent>
+                        </Tooltip>
+
+
                         {/* Save Flow Button */}
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                
-                                    
-                                    <Button onClick={saveFlow} variant="default">
-                                                <DownloadCloudIcon />
-                                             </Button>
-                                    
-                                    
-
-
+                                <Button onClick={saveFlow} variant="default">
+                                    <DownloadCloudIcon />
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent>
                                 <p>Save Flow</p>
